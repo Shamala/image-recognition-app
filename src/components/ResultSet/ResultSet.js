@@ -1,7 +1,6 @@
 import React from "react";
 import "./ResultSet.css";
 const ResultSet = ({ box, color, concept }) => {
-  console.log("Color:", color);
   return (
     <div
       className="bounding-box"

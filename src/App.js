@@ -6,7 +6,7 @@ import Signin from "./components/Signin/Signin";
 import Register from "./components/Register/Register";
 import FaceRecognition from "./components/ImageRecognition/ImageRecognition.js";
 import ImageLinkForm from "./components/ImageLinkForm/ImageLinkForm";
-import { useCallback } from "react";
+import { useCallback, useEffect } from "react";
 import Particles from "react-tsparticles";
 import { loadFull } from "tsparticles";
 import { useState, useRef } from "react";
@@ -23,13 +23,14 @@ function App() {
   const [regions, setRegions] = useState([]);
   const [route, setRoute] = useState("route");
   const [signedIn, setSignedIn] = useState(false);
+  const [user, setUser] = useState({});
 
   const particlesInit = useCallback(async (engine) => {
     await loadFull(engine);
   }, []);
 
   const particlesLoaded = useCallback(async (container) => {
-    await console.log(container);
+    await container;
   }, []);
 
   const getClarifaiRequestOptions = (imageUrl) => {
@@ -59,8 +60,12 @@ function App() {
     };
   };
 
+  const displayRegions = (response) => {
+    if (response && response.outputs && response?.outputs[0].data.regions) {
+      setRegions((prev) => [...response.outputs[0].data.regions]);
+    }
+  };
   const onInputChange = (e) => {
-    console.log(e.target.value);
     setInput(e.target.value);
   };
 
@@ -72,16 +77,29 @@ function App() {
 
   const onSubmit = () => {
     setImageUrl(() => input);
-    console.log("Click");
     fetch(
       "https://api.clarifai.com/v2/models/" + MODEL_ID + "/outputs",
       getClarifaiRequestOptions(imageUrl)
     )
-      .then((response) => response.json())
-      .then((result) => {
-        // console.log(result);
-        console.log(result.outputs[0].data.regions);
-        setRegions((prev) => [...result.outputs[0].data.regions]);
+      .then((response) => {
+        if (response) {
+          fetch("http://localhost:3000/image", {
+            method: "PUT",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              id: user?.id,
+            }),
+          })
+            .then((response) => response.json())
+            .then((count) => {
+              setUser((prev) => {
+                const currentUser = { ...prev, entries: count };
+                return currentUser;
+              });
+            });
+        }
+
+        displayRegions(response);
       })
       .catch((error) => console.log("error", error));
   };
@@ -170,7 +188,7 @@ function App() {
         <>
           <Navigation onRouteChange={onRouteChange} signedIn={signedIn} />
           <Logo />
-          <Rank />
+          <Rank name={user?.name} entries={user?.entries} />
           <ImageLinkForm
             onInputChange={onInputChange}
             input={input}
@@ -183,9 +201,9 @@ function App() {
           />
         </>
       ) : route === "register" ? (
-        <Register onRouteChange={onRouteChange} />
+        <Register onRouteChange={onRouteChange} setUser={setUser} />
       ) : (
-        <Signin onRouteChange={onRouteChange} />
+        <Signin onRouteChange={onRouteChange} setUser={setUser} />
       )}
     </div>
   );
