@@ -1,12 +1,12 @@
 import React, { useState } from "react";
-
+import { baseUrl } from "../../config";
 const Signin = ({ onRouteChange, setUser }) => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
 
   const onSubmitSignIn = (e) => {
     e.preventDefault();
-    fetch("http://localhost:3000/signin", {
+    fetch(`${baseUrl}/signin`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
@@ -16,7 +16,7 @@ const Signin = ({ onRouteChange, setUser }) => {
     })
       .then((response) => response.json())
       .then((user) => {
-        if (user) {
+        if (user.id) {
           setUser(user);
           onRouteChange("home");
         }

@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-
+import { baseUrl } from "../../config";
 const Register = ({ onRouteChange, setUser }) => {
   const [email, setEmail] = useState("");
   const [name, setName] = useState("");
@@ -7,7 +7,7 @@ const Register = ({ onRouteChange, setUser }) => {
 
   const onRegister = (e) => {
     e.preventDefault("");
-    fetch("http://localhost:3000/register", {
+    fetch(`${baseUrl}/register`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
@@ -18,8 +18,7 @@ const Register = ({ onRouteChange, setUser }) => {
     })
       .then((response) => response.json())
       .then((user) => {
-        if (user) {
-          console.log(user);
+        if (user.id) {
           setUser(user);
           onRouteChange("home");
         }

@@ -6,17 +6,13 @@ import Signin from "./components/Signin/Signin";
 import Register from "./components/Register/Register";
 import FaceRecognition from "./components/ImageRecognition/ImageRecognition.js";
 import ImageLinkForm from "./components/ImageLinkForm/ImageLinkForm";
-import { useCallback, useEffect } from "react";
+import { useCallback } from "react";
 import Particles from "react-tsparticles";
 import { loadFull } from "tsparticles";
 import { useState, useRef } from "react";
-
+import { baseUrl } from "./config";
 function App() {
   const imageRef = useRef();
-  const PAT = "9c190be0d5734c2ab57c4963fee46c38";
-  const USER_ID = "shamala_mallya";
-  const APP_ID = "face-recognition";
-  const MODEL_ID = "general-image-detection";
 
   const [imageUrl, setImageUrl] = useState("");
   const [input, setInput] = useState("");
@@ -33,31 +29,12 @@ function App() {
     await container;
   }, []);
 
-  const getClarifaiRequestOptions = (imageUrl) => {
-    const raw = JSON.stringify({
-      user_app_id: {
-        user_id: USER_ID,
-        app_id: APP_ID,
-      },
-      inputs: [
-        {
-          data: {
-            image: {
-              url: imageUrl,
-            },
-          },
-        },
-      ],
-    });
-
-    return {
-      method: "POST",
-      headers: {
-        Accept: "application/json",
-        Authorization: "Key " + PAT,
-      },
-      body: raw,
-    };
+  const setInitialState = () => {
+    setImageUrl("");
+    setInput("");
+    setRegions([]);
+    setSignedIn(false);
+    setUser({});
   };
 
   const displayRegions = (response) => {
@@ -70,20 +47,28 @@ function App() {
   };
 
   const onRouteChange = (route) => {
-    if (route === "signOut") setSignedIn(false);
-    else if (route === "home") setSignedIn(true);
+    if (route === "signOut") {
+      setInitialState();
+    } else if (route === "home") {
+      setSignedIn(true);
+    }
     setRoute(() => route);
   };
 
   const onSubmit = () => {
     setImageUrl(() => input);
-    fetch(
-      "https://api.clarifai.com/v2/models/" + MODEL_ID + "/outputs",
-      getClarifaiRequestOptions(imageUrl)
-    )
+    fetch(`${baseUrl}/imageurl`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        imageUrl: imageUrl,
+      }),
+    })
+      .then((response) => response.json())
       .then((response) => {
+        console.log(response);
         if (response) {
-          fetch("http://localhost:3000/image", {
+          fetch(`${baseUrl}/image`, {
             method: "PUT",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
@@ -96,12 +81,11 @@ function App() {
                 const currentUser = { ...prev, entries: count };
                 return currentUser;
               });
-            });
+            })
+            .catch(console.log);
         }
-
         displayRegions(response);
-      })
-      .catch((error) => console.log("error", error));
+      });
   };
 
   return (
